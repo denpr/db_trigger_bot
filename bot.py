@@ -44,7 +44,7 @@ con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 cur = con.cursor()
 
 cur.execute("LISTEN new_id;")
-print("Waiting for notifications on channel 'new_id'")
+print("Waiting a new message")
 
 while True:
     if select.select([con], [], [], 10) == ([], [], []):
@@ -53,11 +53,8 @@ while True:
         con.poll()
         while con.notifies:
             notify = con.notifies.pop(0)
-            print(f"Got NOTIFY: {notify.channel} - {notify.payload}")
-            postgresql_select_query = f'select * from main_incomingmessage where id = {notify.payload}'
-            print(type(notify.payload))
-            cur.execute(postgresql_select_query)
-            mobile_records = cur.fetchall()
-            for row in mobile_records:
+            cur.execute(f'select * from main_incomingmessage where id = {notify.payload}')
+            message = cur.fetchall()
+            for row in message:
                 bot_message = f"Message from {row[1]}\nemail: {row[2]}\n---\n{row[4]}"
                 bot.send_message(USER_ID, bot_message)
