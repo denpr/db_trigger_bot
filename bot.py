@@ -1,8 +1,14 @@
+from ast import Import
 import psycopg2
 import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
 from threading import Thread
 from settings import TG_TOKEN, USER_ID, DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
+from psycopg2 import Error
+from message import Message
 
+
+from db_bot import db_results
 
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 import select
@@ -60,26 +66,47 @@ def db_trigger():
                 message = cur.fetchall()
                 for row in message:
                         
-                    d = row[3].strftime('%Y-%M-%d %H:%M')
+                    d = row[3].strftime('%Y-%m-%d %H:%M')
                         
-                    bot_message = f"""Message from Site \n
-                    date: {d}\n
-                    name: {row[1]}\n
-                    email: {row[2]}\n
-                    ---\n
-                    {row[4]}"""
+                    bot_message = f"Message from Site \ndate: {d}\nname: {row[1]}\nemail: {row[2]}\n---\n{row[4]}"
                     bot.send_message(USER_ID, bot_message)   
 
 Thread(target=db_trigger, args=()).start()
 
-# Bot dialogs
-@bot.message_handler(commands=['start'])
-def start_message(message):
-  bot.send_message(message.chat.id,"Привет ✌️ ")
+@bot.message_handler(commands=['app'])
+def staff_app(message):
+    if message.chat.id != USER_ID:
+        print('Доступ закрыт')
+    else:
+        print('Доступ разрешён')
+        keyboard = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        button1 = KeyboardButton('Меню')
+        keyboard.add(button1)
+        step0 = bot.send_message(message.chat.id, 'Приветствуем!!!', reply_markup=keyboard)
+        bot.register_next_step_handler(step0, step1)
 
+def step1(message):
+    keyboard = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True, one_time_keyboard=True)
+    button1 = KeyboardButton('10 последних сообщений')
+    button2 = KeyboardButton('Все сообщения')
+    keyboard.add(button1, button2)
+    step1 = bot.send_message(message.chat.id, 'Menu', reply_markup=keyboard)
+    bot.register_next_step_handler(step1, step2)
 
+def step2(message):
+    sql = ''
+    if message.text == "10 последних сообщений":
+        sql = 'SELECT * FROM (SELECT * FROM main_incomingmessage ORDER BY id DESC LIMIT 10) t ORDER BY id;'
+    elif message.text == 'Все сообщения':
+        sql = 'SELECT * FROM main_incomingmessage'
+    elif(message.text == 'Сообщения за месяц'):
+        pass
 
-
-
+    messages = db_results(sql)
+    if messages:
+        for el in messages:
+            bot.send_message(USER_ID, f'id = {el.message_id}\ndate = {el.date}\nname = {el.name}\nemail = {el.email}\nmessage = {el.message}')
+    else:
+        bot.send_message(USER_ID, 'Сообщений не найдено.')
 
 bot.infinity_polling()
