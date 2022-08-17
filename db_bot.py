@@ -13,10 +13,10 @@ def db_results(sql):
 
         cursor1 = connection.cursor()
         cursor1.execute(sql)
-        mobile_records = cursor1.fetchall()
+        messages_records = cursor1.fetchall()
  
         messages = []
-        for row in mobile_records:
+        for row in messages_records:
             mes = Message(message_id=row[0], name=row[1], email=row[2], date=row[3].strftime('%Y-%m-%d %H:%M'),message=row[4])
             messages.append(mes)
         return messages
