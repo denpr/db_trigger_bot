@@ -13,6 +13,13 @@ from db_bot import db_results
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 import select
 
+fire = u'\U0001F525'
+user = u'\U0001F64D'
+clock = u'\U0001F570'
+email = u'\U0001F4E7'
+incom = u'\U0001F4E9'
+
+
 bot = telebot.TeleBot(TG_TOKEN)
 
 con = psycopg2.connect(
@@ -105,7 +112,7 @@ def step2(message):
     messages = db_results(sql)
     if messages:
         for el in messages:
-            bot.send_message(USER_ID, f'id = {el.message_id}\ndate = {el.date}\nname = {el.name}\nemail = {el.email}\nmessage = {el.message}')
+            bot.send_message(USER_ID, f'id = {el.message_id}\n-------\n{clock} {el.date}\n{user} {el.name}\n{email} {el.email}\n{incom} {el.message}')
     else:
         bot.send_message(USER_ID, 'Сообщений не найдено.')
 
